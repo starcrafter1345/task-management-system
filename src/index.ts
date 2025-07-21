@@ -1,14 +1,17 @@
-import "dotenv/config";
+import env from "./config/env";
 import cors from "cors";
 import express from "express";
-import { drizzle } from "drizzle-orm/node-postgres";
+import coursesRouter from "./routes/coursesRouter";
+import tasksRouter from "./routes/tasksRouter";
+import authRouter from "./routes/authRouter";
 
 const app = express();
-
-const db = drizzle(process.env.DATABASE_URL);
 
 app.use(cors());
 app.use(express.json());
 
-// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-app.listen(process.env.PORT, () => { console.log(`Server is started at http://localhost:${process.env.PORT!}`); });
+app.use("/api/auth", authRouter);
+app.use("/api", coursesRouter);
+app.use("/api", tasksRouter);
+
+app.listen(env.PORT, () => { console.log(`Server is started at http://localhost:${env.PORT}`); });
