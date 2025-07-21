@@ -16,4 +16,4 @@ app.use("/api/auth", authRouter);
 // app.use("/api", coursesRouter);
 // app.use("/api", tasksRouter);
 
-app.listen(env.PORT, () => { console.log(`Server is started at http://localhost:${env.PORT}`); });
+app.listen(env.port, () => { console.log(`Server is started at http://localhost:${env.port}`); });
