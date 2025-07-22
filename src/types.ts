@@ -8,6 +8,8 @@ export interface User {
   createdAt: Date;
 }
 
+export type ResponseUser = Pick<User, "name" | "email">;
+
 export const RegisterFormSchema = z.object({
   name: z.string().min(2),
   email: z.email(),
@@ -15,3 +17,10 @@ export const RegisterFormSchema = z.object({
 });
 
 export type RegisterFormEntry = z.infer<typeof RegisterFormSchema>;
+
+export const LoginFormSchema = z.object({
+  email: z.email(),
+  password: z.string()
+});
+
+export type LoginFormEntry = z.infer<typeof LoginFormSchema>;
