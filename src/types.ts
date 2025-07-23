@@ -8,7 +8,10 @@ export interface User {
   createdAt: Date;
 }
 
-export type ResponseUser = Pick<User, "name" | "email">;
+export interface ResponseToken {
+  access_token: string;
+  refresh_token: string;
+}
 
 export const RegisterFormSchema = z.object({
   name: z.string().min(2),

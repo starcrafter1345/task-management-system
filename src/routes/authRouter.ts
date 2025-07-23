@@ -26,6 +26,6 @@ const loginParses = (req: Request, _res: Response, next: NextFunction) => {
 
 authRouter.post("/register", registerParser, authController.register);
 authRouter.post("/login", loginParses, authController.login);
-// authRouter.post("/logout");
+authRouter.post("/logout", authController.logout);
 
 export default authRouter;

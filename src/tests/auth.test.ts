@@ -13,28 +13,45 @@ describe("/auth", () => {
     const response = await request(app).post("/api/auth/register").send(user);
 
     expect(response.status).toBe(200);
-    expect(response.body.token).not.toBeNull();
+    expect(response.body.access_token).toBeDefined();
+    expect(response.body.refresh_token).toBeDefined();
   });
 
   it("POST /login", async () => {
-    const register = await request(app).post("/api/auth/register").send(user);
-    const token = register.body;
+    await request(app).post("/api/auth/register").send(user);
+    const { email, password } = user;
 
-    const response = await request(app).post("/api/auth/login").send({ token });
+    const response = await request(app).post("/api/auth/login").send({ email, password });
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({
-      name: "starc",
-      email: "starc@mail.com"
-    });
+    expect(response.body.access_token).toBeDefined();
+    expect(response.body.refresh_token).toBeDefined();
   });
 
-  it("POST /login, malformatted token", async () => {
+  it("POST /login, wrong password", async () => {
+    await request(app).post("/api/auth/register").send(user);
+
+    const response = await request(app).post("/api/auth/login").send({ email: "starc@mail.com", password: "kdfmvkm" });
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({ error: "Unauthorized" });
+  });
+
+  it("POST /login, wrong email", async () => {
+    await request(app).post("/api/auth/register").send(user);
+
+    const response = await request(app).post("/api/auth/login").send({ email: "strc@mail.com", password: "secret" });
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({ error: "Not Found" });
+  });
+
+  it("POST /logout", async () => {
     const register = await request(app).post("/api/auth/register").send(user);
-    const token = register.body;
 
-    const response = await request(app).post("/api/auth/login").send({ token });
+    const logout = await request(app).post("/api/auth/logout").send(register.body.refresh_token);
 
-
+    expect(logout.status).toBe(200);
+    expect(logout.body).toEqual({ message: "Logged Out" });
   });
 });

@@ -3,6 +3,7 @@ declare global {
 		interface ProcessEnv {
 			PORT: string;
 			PRIVATE_KEY: string;
+			REFRESH_KEY: string;
 		}
 	}
 }

@@ -10,7 +10,8 @@ function requireEnv(key: string): string {
 
 export default {
 	port: parseInt(process.env.PORT ?? "3000"),
-  privateKey: requireEnv("PRIVATE_KEY")
+  privateKey: requireEnv("PRIVATE_KEY"),
+  refreshKey: requireEnv("REFRESH_KEY")
 };
 
 console.log("env loaded");
