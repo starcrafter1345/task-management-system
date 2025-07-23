@@ -3,7 +3,7 @@ import env from "../config/env";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-import { LoginFormEntry, RegisterFormEntry, ResponseToken, User } from "../types";
+import { CookieRequest, LoginFormEntry, RegisterFormEntry, ResponseToken, User } from "../types";
 
 const users: User[] = [];
 const tokenBlacklist: Set<string> = new Set<string>();
@@ -23,10 +23,18 @@ const register = async (req: Request<unknown, unknown, RegisterFormEntry>, res: 
     createdAt: new Date()
   });
 
+
   const accessToken = jwt.sign({ userId, type: "access" }, env.privateKey, { expiresIn: "2h" });
   const refreshToken = jwt.sign({ userId, type: "refresh" }, env.refreshKey, { expiresIn: "1d" });
 
-  res.status(200).json({ access_token: accessToken, refresh_token: refreshToken });
+  res.cookie("refresh_token", refreshToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+    maxAge: 24*60*60*1000 // 24h
+  });
+
+  res.status(200).json({ access_token: accessToken });
 };
 
 const login = async (req: Request<unknown, unknown, LoginFormEntry>, res: Response<ResponseToken>, next: NextFunction) => {
@@ -44,7 +52,15 @@ const login = async (req: Request<unknown, unknown, LoginFormEntry>, res: Respon
   if (await bcrypt.compare(password, user.hashedPassword)) {
     const accessToken = jwt.sign({ user: user.id, type: "access" }, env.privateKey, { expiresIn: "2h" });
     const refreshToken = jwt.sign({ user: user.id, type: "refresh" }, env.refreshKey, { expiresIn: "1d" });
-    res.status(200).json({ access_token: accessToken, refresh_token: refreshToken });
+
+    res.cookie("refresh_token", refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+      maxAge: 24*60*60*1000 // 24h
+    });
+
+    res.status(200).json({ access_token: accessToken });
   } else {
     const error = new Error("Unauthorized");
     error.name = "Unauthorized";
@@ -52,14 +68,15 @@ const login = async (req: Request<unknown, unknown, LoginFormEntry>, res: Respon
   }
 };
 
-const logout = (req: Request, res: Response) => {
-  const token = req.headers.authorization?.split(" ")[1];
+const logout = (req: CookieRequest, res: Response) => {
+  const token = req.cookies.refresh_token;
 
   if (token) {
     tokenBlacklist.add(token);
+    res.status(200).json({ message: "Logged Out" });
+  } else {
+    res.status(401).json({ message: "No token provided" });
   }
-
-  res.status(200).json({ message: "Logged Out" });
 };
 
 export default {

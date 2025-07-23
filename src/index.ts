@@ -1,6 +1,7 @@
 import env from "./config/env";
 import cors from "cors";
 import express from "express";
+import cookieParser from "cookie-parser";
 import coursesRouter from "./routes/coursesRouter";
 import tasksRouter from "./routes/tasksRouter";
 import authRouter from "./routes/authRouter";
@@ -11,6 +12,7 @@ export const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 
 app.use("/api/auth", authRouter);
 // app.use("/api", dashboardRouter);

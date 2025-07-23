@@ -14,7 +14,7 @@ describe("/auth", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.access_token).toBeDefined();
-    expect(response.body.refresh_token).toBeDefined();
+    expect(response.headers["set-cookie"]).toBeDefined();
   });
 
   it("POST /login", async () => {
@@ -25,7 +25,7 @@ describe("/auth", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.access_token).toBeDefined();
-    expect(response.body.refresh_token).toBeDefined();
+    expect(response.headers["set-cookie"]).toBeDefined();
   });
 
   it("POST /login, wrong password", async () => {

@@ -1,3 +1,4 @@
+import { Request } from "express";
 import z from "zod";
 
 export interface User {
@@ -10,7 +11,12 @@ export interface User {
 
 export interface ResponseToken {
   access_token: string;
-  refresh_token: string;
+}
+
+export interface CookieRequest extends Request {
+  cookies: {
+    refresh_token?: string;
+  }
 }
 
 export const RegisterFormSchema = z.object({
