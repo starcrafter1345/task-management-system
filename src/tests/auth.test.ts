@@ -49,9 +49,24 @@ describe("/auth", () => {
   it("POST /logout", async () => {
     const register = await request(app).post("/api/auth/register").send(user);
 
-    const logout = await request(app).post("/api/auth/logout").send(register.body.refresh_token);
+    const token = register.body.refresh_token;
+    const logout = await request(app).post("/api/auth/logout").set("Cookie", `refresh_token=${token}`);
 
     expect(logout.status).toBe(200);
     expect(logout.body).toEqual({ message: "Logged Out" });
+  });
+
+  it("GET /me", async () => {
+    const register = await request(app).post("/api/auth/register").send(user);
+
+    const token = register.body.access_token;
+    const me = await request(app).get("/api/auth/me").set('Authorization', `Bearer ${token}`);
+
+    expect(me.status).toBe(200);
+    expect(me.body).toEqual({
+      name: "starc",
+      email: "starc@mail.com",
+      createdAt: expect.any(String)
+    });
   });
 });

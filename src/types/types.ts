@@ -9,6 +9,8 @@ export interface User {
   createdAt: Date;
 }
 
+export type ResponseUser = Omit<User, "id" | "hashedPassword">;
+
 export interface ResponseToken {
   access_token: string;
 }
