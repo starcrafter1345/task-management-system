@@ -3,9 +3,9 @@ import env from "../config/env";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-import { CookieRequest, LoginFormEntry, RegisterFormEntry, ResponseToken, User } from "../types";
+import { CookieRequest, LoginFormEntry, RegisterFormEntry, ResponseToken, ResponseUser, User } from "../types/types";
 
-const users: User[] = [];
+export const users: User[] = [];
 const tokenBlacklist: Set<string> = new Set<string>();
 
 const register = async (req: Request<unknown, unknown, RegisterFormEntry>, res: Response<ResponseToken>) => {
@@ -22,7 +22,6 @@ const register = async (req: Request<unknown, unknown, RegisterFormEntry>, res: 
     id: userId,
     createdAt: new Date()
   });
-
 
   const accessToken = jwt.sign({ userId, type: "access" }, env.privateKey, { expiresIn: "2h" });
   const refreshToken = jwt.sign({ userId, type: "refresh" }, env.refreshKey, { expiresIn: "1d" });
@@ -79,8 +78,23 @@ const logout = (req: CookieRequest, res: Response) => {
   }
 };
 
+const me = (_req: Request, res: Response) => {
+  if (!res.locals.user) {
+    throw new Error("Internal Error");
+  }
+
+  const { name, email, createdAt } = res.locals.user;
+
+  const responseUser: ResponseUser = {
+    name, email, createdAt
+  };
+
+  res.status(200).json(responseUser);
+};
+
 export default {
 	register,
   login,
-  logout
+  logout,
+  me
 };

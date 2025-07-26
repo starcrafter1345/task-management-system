@@ -11,6 +11,15 @@ export interface User {
 
 export type ResponseUser = Omit<User, "id" | "hashedPassword">;
 
+export interface Course {
+  id: number;
+  user_id: number;
+  name: string;
+  code: string;
+  color: string;
+  created_at: Date;
+}
+
 export interface ResponseToken {
   access_token: string;
 }

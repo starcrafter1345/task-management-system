@@ -60,7 +60,7 @@ describe("/auth", () => {
     const register = await request(app).post("/api/auth/register").send(user);
 
     const token = register.body.access_token;
-    const me = await request(app).get("/api/auth/me").set('Authorization', `Bearer ${token}`);
+    const me = await request(app).get("/api/auth/me").set("Authorization", `Bearer ${token}`);
 
     expect(me.status).toBe(200);
     expect(me.body).toEqual({

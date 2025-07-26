@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import authController from "../controllers/authController";
-import { LoginFormSchema, RegisterFormSchema } from "../types";
+import { LoginFormSchema, RegisterFormSchema } from "../types/types";
+import { authMiddleware } from "../middlewares/authMiddleware";
 
 const authRouter = Router();
 
@@ -22,7 +23,7 @@ const loginParses = (req: Request, _res: Response, next: NextFunction) => {
   }
 };
 
-// authRouter.get("/me");
+authRouter.get("/me", authMiddleware, authController.me);
 
 authRouter.post("/register", registerParser, authController.register);
 authRouter.post("/login", loginParses, authController.login);
