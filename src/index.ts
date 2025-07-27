@@ -16,7 +16,7 @@ app.use(cookieParser());
 
 app.use("/api/auth", authRouter);
 // app.use("/api", dashboardRouter);
-// app.use("/api", coursesRouter);
+app.use("/api", coursesRouter);
 // app.use("/api", tasksRouter);
 
 app.use(errorMiddleware);

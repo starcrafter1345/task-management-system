@@ -3,7 +3,8 @@ import env from "../config/env";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-import { CookieRequest, LoginFormEntry, RegisterFormEntry, ResponseToken, ResponseUser, User } from "../types/types";
+import { CookieRequest, ResponseToken } from "../types/types";
+import { LoginFormEntry, RegisterFormEntry, ResponseUser, User } from "../types/User";
 
 export const users: User[] = [];
 const tokenBlacklist: Set<string> = new Set<string>();
