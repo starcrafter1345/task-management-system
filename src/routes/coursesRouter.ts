@@ -20,8 +20,8 @@ coursesRouter.route("/courses")
 	.get(coursesController.getAll)
 	.post(courseParser, coursesController.create);
 
-// coursesRouter.route("/courses/:id")
-// 	.put()
-// 	.delete();
+coursesRouter.route("/courses/:id")
+	.delete(coursesController.deleteCourse);
+	// .put()
 
 export default coursesRouter;

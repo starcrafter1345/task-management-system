@@ -38,4 +38,22 @@ describe("/courses", () => {
     expect(get.status).toBe(200);
     expect(get.body).toEqual([course]);
   });
+
+  it("DELETE", async () => {
+    const newCourse = {
+      name: "English",
+      code: "C101",
+      color: "#0000AF"
+    };
+
+    await request(app).post("/api/courses").send(newCourse).set("Authorization", `Bearer ${token}`);
+
+    const deleteCourse = await request(app).delete("/api/courses/1").set("Authorization", `Bearer ${token}`);
+
+    expect(deleteCourse.status).toBe(204);
+
+    const allCourses = await request(app).get("/api/courses").set("Authorization", `Bearer ${token}`);
+
+    expect(allCourses.body).toEqual([newCourse]);
+  });
 });

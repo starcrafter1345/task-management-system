@@ -51,7 +51,33 @@ const create = (req: Request<unknown, unknown, CourseFormEntry>, res: Response<R
   });
 };
 
+const deleteCourse = (req: Request, res: Response, next: NextFunction) => {
+  const user = res.locals.user;
+  const id = req.params.id;
+
+  if (!user) {
+    const error = new Error("Unauthorized");
+    error.name = "Unauthorized";
+    next(error);
+    return;
+  }
+
+  const courseIndex = courses.findIndex(c => c.id === Number(id));
+
+  if (courseIndex === -1) {
+    const error = new Error("Not Found");
+    error.name = "Not Found";
+    next(error);
+    return;
+  }
+
+  courses.splice(courseIndex, 1);
+
+  res.sendStatus(204);
+};
+
 export default {
   getAll,
-  create
+  create,
+  deleteCourse
 };
