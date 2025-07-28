@@ -1,10 +1,10 @@
 import { NextFunction, Request, Response } from "express";
 
-import {Course, CourseFormEntry, ResponseCourse} from "../types/Course";
+import { Course, CourseFormEntry, ResponseCourse } from "../types/Course";
 
 const courses: Course[] = [];
 
-const getAll = (_req: Request, res: Response<ResponseCourse[]>, next: NextFunction) => {
+const getAllCourses = (_req: Request, res: Response<ResponseCourse[]>, next: NextFunction) => {
   const user = res.locals.user;
 
   if (!user) {
@@ -20,7 +20,7 @@ const getAll = (_req: Request, res: Response<ResponseCourse[]>, next: NextFuncti
   res.status(200).json(responseCourses);
 };
 
-const create = (req: Request<unknown, unknown, CourseFormEntry>, res: Response<ResponseCourse>, next: NextFunction) => {
+const createCourse = (req: Request<unknown, unknown, CourseFormEntry>, res: Response<ResponseCourse>, next: NextFunction) => {
   const user = res.locals.user;
   const courseEntry = req.body;
 
@@ -51,6 +51,30 @@ const create = (req: Request<unknown, unknown, CourseFormEntry>, res: Response<R
   });
 };
 
+const changeCourse = (req: Request<unknown, unknown, CourseFormEntry>, res: Response<ResponseCourse>, next: NextFunction) => {
+  const changingCourse = req.body;
+  const user = res.locals.user;
+  const id = req.params.id;
+
+  if (!user) {
+    const error = new Error("Unauthorized");
+    error.name = "Unauthorized";
+    next(error);
+    return;
+  }
+
+  const courseIndex = courses.findIndex(c => c.id === Number(id));
+
+  courses[courseIndex] = {
+    ...courses[courseIndex],
+    name: changingCourse.name,
+    code: changingCourse.code,
+    color: changingCourse.color
+  };
+
+  res.status(200).json(changingCourse)
+};
+
 const deleteCourse = (req: Request, res: Response, next: NextFunction) => {
   const user = res.locals.user;
   const id = req.params.id;
@@ -77,7 +101,8 @@ const deleteCourse = (req: Request, res: Response, next: NextFunction) => {
 };
 
 export default {
-  getAll,
-  create,
-  deleteCourse
+  getAllCourses,
+  createCourse,
+  deleteCourse,
+  changeCourse
 };

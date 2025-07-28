@@ -17,11 +17,11 @@ const courseParser = (req: Request, _res: Response, next: NextFunction) => {
 coursesRouter.use(authMiddleware);
 
 coursesRouter.route("/courses")
-	.get(coursesController.getAll)
-	.post(courseParser, coursesController.create);
+	.get(coursesController.getAllCourses)
+	.post(courseParser, coursesController.createCourse);
 
 coursesRouter.route("/courses/:id")
-	.delete(coursesController.deleteCourse);
-	// .put()
+	.delete(coursesController.deleteCourse)
+	.put(courseParser, coursesController.changeCourse);
 
 export default coursesRouter;

@@ -39,6 +39,18 @@ describe("/courses", () => {
     expect(get.body).toEqual([course]);
   });
 
+  it("PUT", async () => {
+    const changingCourse = { ...course, color: "#FF00FF" }
+    const put = await request(app).put("/api/courses/1").send(changingCourse).set("Authorization", `Bearer ${token}`);
+
+    expect(put.status).toBe(200);
+    expect(put.body).toEqual(changingCourse);
+
+    const getAll = await request(app).get("/api/courses").set("Authorization", `Bearer ${token}`);
+
+    expect(getAll.body).toEqual([changingCourse]);
+  });
+
   it("DELETE", async () => {
     const newCourse = {
       name: "English",
