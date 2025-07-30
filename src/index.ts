@@ -21,4 +21,6 @@ app.use("/api", coursesRouter);
 
 app.use(errorMiddleware);
 
-app.listen(env.port, () => { console.log(`Server is started at http://localhost:${String(env.port)}`); });
+app.listen(env.port, () => {
+  console.log(`Server is started at http://localhost:${String(env.port)}`);
+});

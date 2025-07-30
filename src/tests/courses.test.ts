@@ -26,46 +26,63 @@ describe("/courses", () => {
   });
 
   it("POST", async () => {
-    const response = await request(app).post("/api/courses").send(course).set("Authorization", `Bearer ${token}`);
+    const response = await request(app)
+      .post("/api/courses")
+      .send(course)
+      .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(201);
-    expect(response.body).toEqual(course);
+    expect(response.body).toMatchObject(course);
   });
 
   it("GET", async () => {
-    const get = await request(app).get("/api/courses").set("Authorization", `Bearer ${token}`);
+    const get = await request(app)
+      .get("/api/courses")
+      .set("Authorization", `Bearer ${token}`);
 
     expect(get.status).toBe(200);
-    expect(get.body).toEqual([course]);
+    expect(get.body).toMatchObject([course]);
   });
 
   it("PUT", async () => {
-    const changingCourse = { ...course, color: "#FF00FF" }
-    const put = await request(app).put("/api/courses/1").send(changingCourse).set("Authorization", `Bearer ${token}`);
+    const changingCourse = { ...course, color: "#FF00FF" };
+    const put = await request(app)
+      .put("/api/courses/1")
+      .send(changingCourse)
+      .set("Authorization", `Bearer ${token}`);
 
     expect(put.status).toBe(200);
-    expect(put.body).toEqual(changingCourse);
+    expect(put.body).toMatchObject(changingCourse);
 
-    const getAll = await request(app).get("/api/courses").set("Authorization", `Bearer ${token}`);
+    const getAll = await request(app)
+      .get("/api/courses")
+      .set("Authorization", `Bearer ${token}`);
 
-    expect(getAll.body).toEqual([changingCourse]);
+    expect(getAll.body).toMatchObject([changingCourse]);
   });
 
   it("DELETE", async () => {
     const newCourse = {
       name: "English",
       code: "C101",
-      color: "#0000AF"
+      color: "#0000AF",
     };
 
-    await request(app).post("/api/courses").send(newCourse).set("Authorization", `Bearer ${token}`);
+    await request(app)
+      .post("/api/courses")
+      .send(newCourse)
+      .set("Authorization", `Bearer ${token}`);
 
-    const deleteCourse = await request(app).delete("/api/courses/1").set("Authorization", `Bearer ${token}`);
+    const deleteCourse = await request(app)
+      .delete("/api/courses/1")
+      .set("Authorization", `Bearer ${token}`);
 
     expect(deleteCourse.status).toBe(204);
 
-    const allCourses = await request(app).get("/api/courses").set("Authorization", `Bearer ${token}`);
+    const allCourses = await request(app)
+      .get("/api/courses")
+      .set("Authorization", `Bearer ${token}`);
 
-    expect(allCourses.body).toEqual([newCourse]);
+    expect(allCourses.body).toMatchObject([newCourse]);
   });
 });

@@ -4,12 +4,20 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 import { CookieRequest, ResponseToken } from "../types/types";
-import { LoginFormEntry, RegisterFormEntry, ResponseUser, User } from "../types/User";
+import {
+  LoginFormEntry,
+  RegisterFormEntry,
+  ResponseUser,
+  User,
+} from "../types/User";
 
 export const users: User[] = [];
 const tokenBlacklist: Set<string> = new Set<string>();
 
-const register = async (req: Request<unknown, unknown, RegisterFormEntry>, res: Response<ResponseToken>) => {
+const register = async (
+  req: Request<unknown, unknown, RegisterFormEntry>,
+  res: Response<ResponseToken>,
+) => {
   const { name, email, password } = req.body;
 
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -21,26 +29,34 @@ const register = async (req: Request<unknown, unknown, RegisterFormEntry>, res: 
     email,
     hashedPassword,
     id: userId,
-    createdAt: new Date()
+    createdAt: new Date().toISOString(),
   });
 
-  const accessToken = jwt.sign({ userId, type: "access" }, env.privateKey, { expiresIn: "2h" });
-  const refreshToken = jwt.sign({ userId, type: "refresh" }, env.refreshKey, { expiresIn: "1d" });
+  const accessToken = jwt.sign({ userId, type: "access" }, env.privateKey, {
+    expiresIn: "2h",
+  });
+  const refreshToken = jwt.sign({ userId, type: "refresh" }, env.refreshKey, {
+    expiresIn: "1d",
+  });
 
   res.cookie("refresh_token", refreshToken, {
     httpOnly: true,
     secure: true,
     sameSite: "strict",
-    maxAge: 24*60*60*1000 // 24h
+    maxAge: 24 * 60 * 60 * 1000, // 24h
   });
 
   res.status(200).json({ access_token: accessToken });
 };
 
-const login = async (req: Request<unknown, unknown, LoginFormEntry>, res: Response<ResponseToken>, next: NextFunction) => {
+const login = async (
+  req: Request<unknown, unknown, LoginFormEntry>,
+  res: Response<ResponseToken>,
+  next: NextFunction,
+) => {
   const { email, password } = req.body;
 
-  const user = users.find(u => u.email === email);
+  const user = users.find((u) => u.email === email);
 
   if (!user) {
     const error = new Error("Not Found");
@@ -50,14 +66,22 @@ const login = async (req: Request<unknown, unknown, LoginFormEntry>, res: Respon
   }
 
   if (await bcrypt.compare(password, user.hashedPassword)) {
-    const accessToken = jwt.sign({ user: user.id, type: "access" }, env.privateKey, { expiresIn: "2h" });
-    const refreshToken = jwt.sign({ user: user.id, type: "refresh" }, env.refreshKey, { expiresIn: "1d" });
+    const accessToken = jwt.sign(
+      { user: user.id, type: "access" },
+      env.privateKey,
+      { expiresIn: "2h" },
+    );
+    const refreshToken = jwt.sign(
+      { user: user.id, type: "refresh" },
+      env.refreshKey,
+      { expiresIn: "1d" },
+    );
 
     res.cookie("refresh_token", refreshToken, {
       httpOnly: true,
       secure: true,
       sameSite: "strict",
-      maxAge: 24*60*60*1000 // 24h
+      maxAge: 24 * 60 * 60 * 1000, // 24h
     });
 
     res.status(200).json({ access_token: accessToken });
@@ -79,23 +103,26 @@ const logout = (req: CookieRequest, res: Response) => {
   }
 };
 
-const me = (_req: Request, res: Response) => {
+const me = (_req: Request, res: Response<ResponseUser>) => {
   if (!res.locals.user) {
     throw new Error("Internal Error");
   }
 
-  const { name, email, createdAt } = res.locals.user;
+  const user = res.locals.user;
 
   const responseUser: ResponseUser = {
-    name, email, createdAt
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    createdAt: user.createdAt,
   };
 
   res.status(200).json(responseUser);
 };
 
 export default {
-	register,
+  register,
   login,
   logout,
-  me
+  me,
 };

@@ -1,10 +1,14 @@
 import { NextFunction, Request, Response } from "express";
 
-import { Course, CourseFormEntry, ResponseCourse } from "../types/Course";
+import { Course, CourseFormEntry } from "../types/Course";
 
 const courses: Course[] = [];
 
-const getAllCourses = (_req: Request, res: Response<ResponseCourse[]>, next: NextFunction) => {
+const getAllCourses = (
+  _req: Request,
+  res: Response<Course[]>,
+  next: NextFunction,
+) => {
   const user = res.locals.user;
 
   if (!user) {
@@ -14,13 +18,16 @@ const getAllCourses = (_req: Request, res: Response<ResponseCourse[]>, next: Nex
     return;
   }
 
-  const userCourses = courses.filter(c => c.user_id === user.id);
-  const responseCourses: ResponseCourse[] = userCourses.map(c => ({ name: c.name, color: c.color, code: c.code }));
+  const userCourses = courses.filter((c) => c.user_id === user.id);
 
-  res.status(200).json(responseCourses);
+  res.status(200).json(userCourses);
 };
 
-const createCourse = (req: Request<unknown, unknown, CourseFormEntry>, res: Response<ResponseCourse>, next: NextFunction) => {
+const createCourse = (
+  req: Request<unknown, unknown, CourseFormEntry>,
+  res: Response<Course>,
+  next: NextFunction,
+) => {
   const user = res.locals.user;
   const courseEntry = req.body;
 
@@ -39,19 +46,19 @@ const createCourse = (req: Request<unknown, unknown, CourseFormEntry>, res: Resp
     code: courseEntry.code,
     name: courseEntry.name,
     color: courseEntry.color,
-    created_at: new Date
+    created_at: new Date().toISOString(),
   };
 
   courses.push(newCourse);
 
-  res.status(201).json({
-    name: newCourse.name,
-    code: newCourse.code,
-    color: newCourse.color,
-  });
+  res.status(201).json(newCourse);
 };
 
-const changeCourse = (req: Request<unknown, unknown, CourseFormEntry>, res: Response<ResponseCourse>, next: NextFunction) => {
+const changeCourse = (
+  req: Request<unknown, unknown, CourseFormEntry>,
+  res: Response<Course>,
+  next: NextFunction,
+) => {
   const changingCourse = req.body;
   const user = res.locals.user;
   const id = req.params.id;
@@ -63,16 +70,18 @@ const changeCourse = (req: Request<unknown, unknown, CourseFormEntry>, res: Resp
     return;
   }
 
-  const courseIndex = courses.findIndex(c => c.id === Number(id));
+  const courseIndex = courses.findIndex((c) => c.id === Number(id));
 
-  courses[courseIndex] = {
+  const changedCourse = {
     ...courses[courseIndex],
     name: changingCourse.name,
     code: changingCourse.code,
-    color: changingCourse.color
+    color: changingCourse.color,
   };
 
-  res.status(200).json(changingCourse)
+  courses[courseIndex] = changedCourse;
+
+  res.status(200).json(changedCourse);
 };
 
 const deleteCourse = (req: Request, res: Response, next: NextFunction) => {
@@ -86,7 +95,7 @@ const deleteCourse = (req: Request, res: Response, next: NextFunction) => {
     return;
   }
 
-  const courseIndex = courses.findIndex(c => c.id === Number(id));
+  const courseIndex = courses.findIndex((c) => c.id === Number(id));
 
   if (courseIndex === -1) {
     const error = new Error("Not Found");
@@ -104,5 +113,5 @@ export default {
   getAllCourses,
   createCourse,
   deleteCourse,
-  changeCourse
+  changeCourse,
 };

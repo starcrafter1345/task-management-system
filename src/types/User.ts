@@ -5,10 +5,10 @@ export interface User {
   name: string;
   email: string;
   hashedPassword: string;
-  createdAt: Date;
+  createdAt: string;
 }
 
-export type ResponseUser = Omit<User, "id" | "hashedPassword">;
+export type ResponseUser = Omit<User, "hashedPassword">;
 
 export const RegisterFormSchema = z.object({
   name: z.string().min(2),
