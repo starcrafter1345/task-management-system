@@ -59,7 +59,7 @@ const login = async (
   const user = users.find((u) => u.email === email);
 
   if (!user) {
-    const error = new Error("Not Found");
+    const error = new Error("User not found");
     error.name = "Not Found";
     next(error);
     return;

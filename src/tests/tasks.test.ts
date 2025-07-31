@@ -29,31 +29,45 @@ describe("/tasks", () => {
       .set("Authorization", `Bearer ${token}`);
   });
 
+  const task = {
+    title: "Functions",
+    description: "This task is about functions",
+    due_date: new Date(Date.now() + 86400).toISOString(),
+    courseId: 1,
+  };
+
+  const expectedTask = {
+    userId: 1,
+    id: 1,
+    title: "Functions",
+    description: "This task is about functions",
+    completed: false,
+    createdAt: expect.any(String),
+    updatedAt: expect.any(String),
+    course: {
+      id: 1,
+      name: "Math",
+      code: "M101",
+      color: "#FFFFFF",
+    },
+  };
+
   it("POST", async () => {
     const createTask = await request(app)
       .post("/api/tasks")
-      .send({
-        title: "Functions",
-        description: "This task is about functions",
-        due_date: new Date(Date.now() + 86400),
-        courseId: 1,
-      })
+      .send(task)
       .set("Authorization", `Bearer ${token}`);
 
     expect(createTask.status).toBe(201);
-    expect(createTask.body).toEqual({
-      id: 1,
-      title: "Functions",
-      description: "This task is about functions",
-      completed: false,
-      createdAt: expect.any(String),
-      updatedAt: expect.any(String),
-      course: {
-        id: 1,
-        name: "Math",
-        code: "M101",
-        color: "#FFFFFF",
-      },
-    });
+    expect(createTask.body).toEqual(expectedTask);
+  });
+
+  it("GET", async () => {
+    const getTasks = await request(app)
+      .get("/api/tasks")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(getTasks.status).toBe(200);
+    expect(getTasks.body).toEqual([expectedTask]);
   });
 });

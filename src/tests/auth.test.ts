@@ -49,7 +49,10 @@ describe("/auth", () => {
       .send({ email: "strc@mail.com", password: "secret" });
 
     expect(response.status).toBe(404);
-    expect(response.body).toEqual({ error: "Not Found" });
+    expect(response.body).toEqual({
+      error: "Not Found",
+      message: "User not found",
+    });
   });
 
   it("POST /logout", async () => {

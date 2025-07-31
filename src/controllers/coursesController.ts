@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 
 import { Course, CourseFormEntry } from "../types/Course";
 
-const courses: Course[] = [];
+export const courses: Course[] = [];
 
 const getAllCourses = (
   _req: Request,

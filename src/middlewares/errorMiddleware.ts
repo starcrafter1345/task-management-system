@@ -21,6 +21,7 @@ export const errorMiddleware = (
     case "Not Found":
       res.status(404).json({
         error: "Not Found",
+        message: err.message,
       });
       break;
     default:
