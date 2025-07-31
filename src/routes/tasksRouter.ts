@@ -18,9 +18,8 @@ tasksRouter
   .get(taskController.getAllTasks)
   .post(taskParser, taskController.createTask);
 //
-// tasksRouter.route("/tasks/:id")
+tasksRouter.route("/tasks/:id").delete(taskController.deleteTask);
 // 	.put()
-// 	.delete();
 //
 // tasksRouter.patch("/tasks/:id/toggle");
 

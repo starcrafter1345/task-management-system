@@ -70,4 +70,18 @@ describe("/tasks", () => {
     expect(getTasks.status).toBe(200);
     expect(getTasks.body).toEqual([expectedTask]);
   });
+
+  it("DELETE", async () => {
+    const deleteTask = await request(app)
+      .delete("/api/tasks/1")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(deleteTask.status).toBe(204);
+
+    const getTasks = await request(app)
+      .get("/api/tasks")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(getTasks.body).toEqual([]);
+  });
 });

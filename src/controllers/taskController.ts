@@ -66,4 +66,29 @@ const createTask = (
   res.status(201).json(newTask);
 };
 
-export default { createTask, getAllTasks };
+const deleteTask = (req: Request, res: Response, next: NextFunction) => {
+  const user = res.locals.user;
+  const id = req.params.id;
+
+  if (!user) {
+    const error = new Error("Unauthorized");
+    error.name = "Unauthorized";
+    next(error);
+    return;
+  }
+
+  const taskIndex = tasks.findIndex((t) => t.id === Number(id));
+
+  tasks.splice(taskIndex, 1);
+
+  if (taskIndex === -1) {
+    const error = new Error("Not Found");
+    error.name = "Not Found";
+    next(error);
+    return;
+  }
+
+  res.sendStatus(204);
+};
+
+export default { createTask, getAllTasks, deleteTask };
