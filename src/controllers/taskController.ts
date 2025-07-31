@@ -52,6 +52,7 @@ const createTask = (
     description: task.description ?? null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    dueDate: task.dueDate ?? null,
     course: {
       id: course.id,
       name: course.name,
@@ -64,6 +65,28 @@ const createTask = (
   tasks.push(newTask);
 
   res.status(201).json(newTask);
+};
+
+const changeTask = (
+  req: Request<unknown, unknown, TaskFormEntry>,
+  res: Response,
+  next: NextFunction,
+) => {
+  const changingTask = req.body;
+  const id = req.params.id;
+
+  const taskIndex = tasks.findIndex((t) => t.id === Number(id));
+
+  const changedTask: Task = {
+    ...tasks[taskIndex],
+    title: changingTask.title,
+    description: changingTask.description ?? null,
+    dueDate: changingTask.dueDate ?? null,
+  };
+
+  tasks[taskIndex] = changedTask;
+
+  res.status(200).json(changedTask);
 };
 
 const deleteTask = (req: Request, res: Response, next: NextFunction) => {
@@ -91,4 +114,4 @@ const deleteTask = (req: Request, res: Response, next: NextFunction) => {
   res.sendStatus(204);
 };
 
-export default { createTask, getAllTasks, deleteTask };
+export default { createTask, getAllTasks, deleteTask, changeTask };

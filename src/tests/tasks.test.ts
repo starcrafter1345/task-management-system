@@ -32,7 +32,7 @@ describe("/tasks", () => {
   const task = {
     title: "Functions",
     description: "This task is about functions",
-    due_date: new Date(Date.now() + 86400).toISOString(),
+    dueDate: new Date(Date.now() + 86400).toISOString(),
     courseId: 1,
   };
 
@@ -44,6 +44,7 @@ describe("/tasks", () => {
     completed: false,
     createdAt: expect.any(String),
     updatedAt: expect.any(String),
+    dueDate: expect.any(String),
     course: {
       id: 1,
       name: "Math",
@@ -69,6 +70,19 @@ describe("/tasks", () => {
 
     expect(getTasks.status).toBe(200);
     expect(getTasks.body).toEqual([expectedTask]);
+  });
+
+  it("PUT", async () => {
+    const changeTask = await request(app)
+      .put("/api/tasks/1")
+      .send({ ...task, description: "This task is was about functions" })
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(changeTask.status).toBe(200);
+    expect(changeTask.body).toMatchObject({
+      ...expectedTask,
+      description: "This task is was about functions",
+    });
   });
 
   it("DELETE", async () => {

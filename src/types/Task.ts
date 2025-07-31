@@ -8,6 +8,7 @@ export interface Task {
   completed: boolean;
   createdAt: string;
   updatedAt: string;
+  dueDate: string | null;
   course: {
     id: number;
     name: string;
