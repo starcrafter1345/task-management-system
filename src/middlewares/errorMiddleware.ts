@@ -9,7 +9,14 @@ export const errorMiddleware = (
   switch (err.name) {
     case "ZodError":
       res.status(400).json({
-        error: "Bad request",
+        error: "Bad Request",
+        cause: JSON.parse(err.message)[0].message as string,
+      });
+      break;
+    case "Bad Request":
+      res.status(400).json({
+        error: "Bad Request",
+        cause: err.message,
       });
       break;
     case "JsonWebTokenError":
@@ -21,7 +28,6 @@ export const errorMiddleware = (
     case "Not Found":
       res.status(404).json({
         error: "Not Found",
-        message: err.message,
       });
       break;
     default:

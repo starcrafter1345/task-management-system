@@ -1,13 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { users } from "../controllers/authController";
 import env from "../config/env";
+import { prisma } from "../db";
 
 interface DecodedToken {
   userId: string;
 }
 
-export const authMiddleware = (
+export const authMiddleware = async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -24,9 +24,20 @@ export const authMiddleware = (
       return;
     }
 
-    const user = users.find(
-      (u) => Number(u.id) === Number(decodedToken.userId),
-    );
+    let user;
+
+    try {
+      user = await prisma.user.findUnique({
+        where: {
+          id: Number(decodedToken.userId),
+        },
+        omit: {
+          hashedPassword: true,
+        },
+      });
+    } catch (err) {
+      next(err);
+    }
 
     if (!user) {
       const err = new Error("Forbidden");

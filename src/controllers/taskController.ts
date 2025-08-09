@@ -1,30 +1,15 @@
 import { NextFunction, Request, Response } from "express";
-import { Task, TaskFormEntry } from "../types/Task";
-import { courses } from "./coursesController";
+import { TaskFormEntry, TaskToggleEntry } from "../types/Task";
+import { prisma } from "../db";
+import { IdParams } from "../types/types";
+import { Prisma } from "@prisma/client";
+import { getTaskStatus } from "../utils/utils";
 
-const tasks: Task[] = [];
-
-const getAllTasks = (_req: Request, res: Response, next: NextFunction) => {
-  const user = res.locals.user;
-
-  if (!user) {
-    const error = new Error("Unauthorized");
-    error.name = "Unauthorized";
-    next(error);
-    return;
-  }
-
-  const userTasks = tasks.filter((t) => t.userId === user.id);
-
-  res.status(200).json(userTasks);
-};
-
-const createTask = (
-  req: Request<unknown, unknown, TaskFormEntry>,
-  res: Response<Task>,
+const getAllTasks = async (
+  _req: Request,
+  res: Response,
   next: NextFunction,
 ) => {
-  const task = req.body;
   const user = res.locals.user;
 
   if (!user) {
@@ -34,62 +19,123 @@ const createTask = (
     return;
   }
 
-  const course = courses.find((c) => c.id === task.courseId);
+  const userTasks = await prisma.task.findMany({
+    where: {
+      course: {
+        userId: user.id,
+      },
+    },
+    include: {
+      course: {
+        omit: {
+          createdAt: true,
+          userId: true,
+        },
+      },
+    },
+  });
 
-  if (!course) {
-    const error = new Error("Course not found");
-    error.name = "Not Found";
+  const userTasksWithStatus = userTasks.map((t) => ({
+    ...t,
+    isOverdue: t.dueDate ? new Date() > new Date(t.dueDate) : false,
+    status: getTaskStatus(t.dueDate, t.completed),
+  }));
+
+  res.status(200).json(userTasksWithStatus);
+};
+
+const createTask = async (
+  req: Request<unknown, unknown, TaskFormEntry>,
+  res: Response,
+  next: NextFunction,
+) => {
+  const { title, description, courseId, dueDate } = req.body;
+  const user = res.locals.user;
+
+  if (!user) {
+    const error = new Error("Unauthorized");
+    error.name = "Unauthorized";
     next(error);
     return;
   }
 
-  const taskId = (tasks.at(-1)?.id ?? 0) + 1;
-
-  const newTask: Task = {
-    userId: user.id,
-    id: taskId,
-    title: task.title,
-    description: task.description ?? null,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    dueDate: task.dueDate ?? null,
-    course: {
-      id: course.id,
-      name: course.name,
-      code: course.code,
-      color: course.color,
+  const newTask = await prisma.task.create({
+    data: {
+      title,
+      description: description ?? null,
+      courseId: courseId,
+      dueDate: dueDate ? new Date(dueDate) : null,
     },
-    completed: false,
-  };
-
-  tasks.push(newTask);
+    include: {
+      course: {
+        select: {
+          id: true,
+          name: true,
+          color: true,
+          code: true,
+        },
+      },
+    },
+  });
 
   res.status(201).json(newTask);
 };
 
-const changeTask = (
-  req: Request<unknown, unknown, TaskFormEntry>,
+const changeTask = async (
+  req: Request<IdParams, unknown, TaskFormEntry>,
   res: Response,
   next: NextFunction,
 ) => {
   const changingTask = req.body;
   const id = req.params.id;
 
-  const taskIndex = tasks.findIndex((t) => t.id === Number(id));
+  const user = res.locals.user;
 
-  const changedTask: Task = {
-    ...tasks[taskIndex],
-    title: changingTask.title,
-    description: changingTask.description ?? null,
-    dueDate: changingTask.dueDate ?? null,
-  };
+  if (!user) {
+    const error = new Error("Unauthorized");
+    error.name = "Unauthorized";
+    next(error);
+    return;
+  }
 
-  tasks[taskIndex] = changedTask;
+  let changedTask;
+
+  try {
+    await prisma.task.findUniqueOrThrow({
+      where: {
+        id: Number(id),
+        course: {
+          userId: user.id,
+        },
+      },
+    });
+
+    changedTask = await prisma.task.update({
+      where: {
+        id: Number(id),
+      },
+      data: {
+        title: changingTask.title,
+        description: changingTask.description ?? null,
+        dueDate: changingTask.dueDate ?? null,
+      },
+      include: {
+        course: {
+          omit: {
+            userId: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+  } catch (err) {
+    console.log(err);
+  }
 
   res.status(200).json(changedTask);
 };
 
-const deleteTask = (req: Request, res: Response, next: NextFunction) => {
+const deleteTask = async (req: Request, res: Response, next: NextFunction) => {
   const user = res.locals.user;
   const id = req.params.id;
 
@@ -100,18 +146,66 @@ const deleteTask = (req: Request, res: Response, next: NextFunction) => {
     return;
   }
 
-  const taskIndex = tasks.findIndex((t) => t.id === Number(id));
+  try {
+    await prisma.task.findUniqueOrThrow({
+      where: {
+        id: Number(id),
+        course: {
+          userId: user.id,
+        },
+      },
+    });
 
-  tasks.splice(taskIndex, 1);
+    await prisma.task.delete({
+      where: {
+        id: Number(id),
+      },
+    });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      next(err);
+    }
 
-  if (taskIndex === -1) {
-    const error = new Error("Not Found");
-    error.name = "Not Found";
-    next(error);
+    next(err);
     return;
   }
 
   res.sendStatus(204);
 };
 
-export default { createTask, getAllTasks, deleteTask, changeTask };
+const toggleTaskComplete = async (
+  req: Request<IdParams, unknown, TaskToggleEntry>,
+  res: Response,
+  next: NextFunction,
+) => {
+  const completed = req.body.completed;
+  const id = req.params.id;
+
+  const user = res.locals.user;
+
+  if (!user) {
+    const error = new Error("Unauthorized");
+    error.name = "Unauthorized";
+    next(error);
+    return;
+  }
+
+  await prisma.task.update({
+    where: {
+      id: Number(id),
+    },
+    data: {
+      completed,
+    },
+  });
+
+  res.sendStatus(200);
+};
+
+export default {
+  createTask,
+  getAllTasks,
+  deleteTask,
+  changeTask,
+  toggleTaskComplete,
+};

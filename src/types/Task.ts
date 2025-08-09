@@ -25,3 +25,9 @@ export const TaskFormSchema = z.object({
 });
 
 export type TaskFormEntry = z.infer<typeof TaskFormSchema>;
+
+export const TaskToggleSchema = z.object({
+  completed: z.boolean(),
+});
+
+export type TaskToggleEntry = z.infer<typeof TaskToggleSchema>;

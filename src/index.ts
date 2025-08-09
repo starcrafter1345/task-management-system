@@ -7,6 +7,7 @@ import tasksRouter from "./routes/tasksRouter";
 import authRouter from "./routes/authRouter";
 import dashboardRouter from "./routes/dashboardRouter";
 import { errorMiddleware } from "./middlewares/errorMiddleware";
+import { authMiddleware } from "./middlewares/authMiddleware";
 
 export const app = express();
 
@@ -15,6 +16,9 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use("/api/auth", authRouter);
+
+app.use(authMiddleware);
+
 // app.use("/api", dashboardRouter);
 app.use("/api", coursesRouter);
 app.use("/api", tasksRouter);

@@ -9,3 +9,7 @@ export interface CookieRequest extends Request {
     refresh_token?: string;
   };
 }
+
+export interface IdParams {
+  id: string;
+}

@@ -3,41 +3,57 @@ import env from "../config/env";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-import { CookieRequest, ResponseToken } from "../types/types";
-import {
-  LoginFormEntry,
-  RegisterFormEntry,
-  ResponseUser,
-  User,
-} from "../types/User";
+import { CookieRequest } from "../types/types";
+import { LoginFormEntry, RegisterFormEntry, SafeUser } from "../types/User";
+import { prisma } from "../db";
+import { Prisma } from "@prisma/client";
 
-export const users: User[] = [];
 const tokenBlacklist: Set<string> = new Set<string>();
 
 const register = async (
   req: Request<unknown, unknown, RegisterFormEntry>,
-  res: Response<ResponseToken>,
+  res: Response,
+  next: NextFunction,
 ) => {
   const { name, email, password } = req.body;
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  const userId = (users.at(-1)?.id ?? 0) + 1;
+  let user: SafeUser;
 
-  users.push({
-    name,
-    email,
-    hashedPassword,
-    id: userId,
-    createdAt: new Date().toISOString(),
-  });
+  try {
+    user = await prisma.user.create({
+      data: { name, email, hashedPassword },
+      omit: { hashedPassword: true },
+    });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === "P2002") {
+        const err = new Error("Email must be unique");
+        err.name = "Bad Request";
+        next(err);
+        return;
+      }
+    }
 
-  const accessToken = jwt.sign({ userId, type: "access" }, env.privateKey, {
-    expiresIn: "2h",
-  });
-  const refreshToken = jwt.sign({ userId, type: "refresh" }, env.refreshKey, {
-    expiresIn: "1d",
-  });
+    next(err);
+    return;
+  }
+
+  const accessToken = jwt.sign(
+    { userId: user.id, type: "access" },
+    env.privateKey,
+    {
+      expiresIn: "2h",
+    },
+  );
+  const refreshToken = jwt.sign(
+    { userId: user.id, type: "refresh" },
+    env.refreshKey,
+    {
+      expiresIn: "1d",
+    },
+  );
 
   res.cookie("refresh_token", refreshToken, {
     httpOnly: true,
@@ -46,17 +62,21 @@ const register = async (
     maxAge: 24 * 60 * 60 * 1000, // 24h
   });
 
-  res.status(200).json({ access_token: accessToken });
+  res.status(201).json({ access_token: accessToken, user });
 };
 
 const login = async (
   req: Request<unknown, unknown, LoginFormEntry>,
-  res: Response<ResponseToken>,
+  res: Response,
   next: NextFunction,
 ) => {
   const { email, password } = req.body;
 
-  const user = users.find((u) => u.email === email);
+  const user = await prisma.user.findUnique({
+    where: {
+      email,
+    },
+  });
 
   if (!user) {
     const error = new Error("User not found");
@@ -67,12 +87,12 @@ const login = async (
 
   if (await bcrypt.compare(password, user.hashedPassword)) {
     const accessToken = jwt.sign(
-      { user: user.id, type: "access" },
+      { userId: user.id, type: "access" },
       env.privateKey,
       { expiresIn: "2h" },
     );
     const refreshToken = jwt.sign(
-      { user: user.id, type: "refresh" },
+      { userId: user.id, type: "refresh" },
       env.refreshKey,
       { expiresIn: "1d" },
     );
@@ -84,7 +104,7 @@ const login = async (
       maxAge: 24 * 60 * 60 * 1000, // 24h
     });
 
-    res.status(200).json({ access_token: accessToken });
+    res.status(200).json({ access_token: accessToken, user });
   } else {
     const error = new Error("Unauthorized");
     error.name = "Unauthorized";
@@ -103,21 +123,14 @@ const logout = (req: CookieRequest, res: Response) => {
   }
 };
 
-const me = (_req: Request, res: Response<ResponseUser>) => {
+const me = (_req: Request, res: Response<SafeUser>) => {
   if (!res.locals.user) {
     throw new Error("Internal Error");
   }
 
   const user = res.locals.user;
 
-  const responseUser: ResponseUser = {
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    createdAt: user.createdAt,
-  };
-
-  res.status(200).json(responseUser);
+  res.status(200).json(user);
 };
 
 export default {

@@ -1,14 +1,13 @@
 import z from "zod";
+import { Prisma } from "@prisma/client";
 
-export interface User {
-  id: number;
-  name: string;
-  email: string;
-  hashedPassword: string;
-  createdAt: string;
-}
+export type User = Prisma.UserGetPayload<{}>;
 
-export type ResponseUser = Omit<User, "hashedPassword">;
+export type SafeUser = Prisma.UserGetPayload<{
+  omit: {
+    hashedPassword: true;
+  };
+}>;
 
 export const RegisterFormSchema = z.object({
   name: z.string().min(2),

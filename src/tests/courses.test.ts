@@ -1,9 +1,12 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import request from "supertest";
+import { agent } from "supertest";
+import { prisma } from "../db";
 import { app } from "../index";
 
 import { CourseFormEntry } from "../types/Course";
 import { RegisterFormEntry } from "../types/User";
+
+const request = agent(app);
 
 const user: RegisterFormEntry = {
   name: "starc",
@@ -11,78 +14,102 @@ const user: RegisterFormEntry = {
   password: "secret",
 };
 
-const course: CourseFormEntry = {
+const courseEntry: CourseFormEntry = {
   name: "Math",
   code: "M101",
   color: "#FFFFFF",
 };
 
 let token: string;
+let course;
 
 describe("/courses", () => {
   beforeAll(async () => {
-    const response = await request(app).post("/api/auth/register").send(user);
+    await prisma.user.deleteMany();
+    await prisma.course.deleteMany();
+    await prisma.task.deleteMany();
+  });
+
+  beforeAll(async () => {
+    const response = await request.post("/api/auth/register").send(user);
     token = response.body.access_token;
   });
 
   it("POST", async () => {
-    const response = await request(app)
+    const createCourse = await request
       .post("/api/courses")
-      .send(course)
+      .send(courseEntry)
       .set("Authorization", `Bearer ${token}`);
 
-    expect(response.status).toBe(201);
-    expect(response.body).toMatchObject(course);
+    expect(createCourse.status).toBe(201);
+    expect(createCourse.body).toMatchObject(courseEntry);
+    course = createCourse.body;
+  });
+
+  it("POST, wrong color input", async () => {
+    const createCourse = await request
+      .post("/api/courses")
+      .send({ ...courseEntry, color: "#ff" })
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(createCourse.status).toBe(400);
+    expect(createCourse.body).toEqual({
+      error: "Bad Request",
+      cause:
+        "Invalid color format. Must be a 7-character hex code (e.g., #RRGGBB).",
+    });
   });
 
   it("GET", async () => {
-    const get = await request(app)
+    const getCourse = await request
       .get("/api/courses")
       .set("Authorization", `Bearer ${token}`);
 
-    expect(get.status).toBe(200);
-    expect(get.body).toMatchObject([course]);
+    expect(getCourse.status).toBe(200);
+    expect(getCourse.body).toMatchObject([courseEntry]);
   });
 
   it("PUT", async () => {
-    const changingCourse = { ...course, color: "#FF00FF" };
-    const put = await request(app)
-      .put("/api/courses/1")
+    const changingCourse = { ...courseEntry, color: "#FF00FF" };
+    const putCourse = await request
+      .put(`/api/courses/${course.id}`)
       .send(changingCourse)
       .set("Authorization", `Bearer ${token}`);
 
-    expect(put.status).toBe(200);
-    expect(put.body).toMatchObject(changingCourse);
+    expect(putCourse.status).toBe(200);
+    expect(putCourse.body).toMatchObject(changingCourse);
 
-    const getAll = await request(app)
+    const getAllCourses = await request
       .get("/api/courses")
       .set("Authorization", `Bearer ${token}`);
 
-    expect(getAll.body).toMatchObject([changingCourse]);
+    expect(getAllCourses.body).toMatchObject([changingCourse]);
   });
 
   it("DELETE", async () => {
-    const newCourse = {
+    const newCourseEntry = {
       name: "English",
       code: "C101",
       color: "#0000AF",
     };
 
-    await request(app)
+    const newCourse = await request
       .post("/api/courses")
-      .send(newCourse)
+      .send(newCourseEntry)
       .set("Authorization", `Bearer ${token}`);
 
-    const deleteCourse = await request(app)
-      .delete("/api/courses/1")
+    const deleteCourse = await request
+      .delete(`/api/courses/${newCourse.body.id}`)
       .set("Authorization", `Bearer ${token}`);
 
     expect(deleteCourse.status).toBe(204);
 
-    const allCourses = await request(app)
+    const getAllCourses = await request
       .get("/api/courses")
       .set("Authorization", `Bearer ${token}`);
 
-    expect(allCourses.body).toMatchObject([newCourse]);
+    expect(getAllCourses.body).toMatchObject([
+      { ...courseEntry, color: "#FF00FF" },
+    ]);
   });
 });

@@ -1,12 +1,14 @@
 import { NextFunction, Request, Response } from "express";
 
 import { Course, CourseFormEntry } from "../types/Course";
+import { prisma } from "../db";
+import { IdParams } from "../types/types";
 
 export const courses: Course[] = [];
 
-const getAllCourses = (
+const getAllCourses = async (
   _req: Request,
-  res: Response<Course[]>,
+  res: Response,
   next: NextFunction,
 ) => {
   const user = res.locals.user;
@@ -18,14 +20,18 @@ const getAllCourses = (
     return;
   }
 
-  const userCourses = courses.filter((c) => c.user_id === user.id);
+  const userCourses = await prisma.course.findMany({
+    where: {
+      userId: user.id,
+    },
+  });
 
   res.status(200).json(userCourses);
 };
 
-const createCourse = (
+const createCourse = async (
   req: Request<unknown, unknown, CourseFormEntry>,
-  res: Response<Course>,
+  res: Response,
   next: NextFunction,
 ) => {
   const user = res.locals.user;
@@ -38,25 +44,26 @@ const createCourse = (
     return;
   }
 
-  const courseId = (courses.at(-1)?.id ?? 0) + 1;
-
-  const newCourse: Course = {
-    id: courseId,
-    user_id: user.id,
-    code: courseEntry.code,
-    name: courseEntry.name,
-    color: courseEntry.color,
-    created_at: new Date().toISOString(),
-  };
-
-  courses.push(newCourse);
+  const newCourse = await prisma.course.create({
+    data: {
+      name: courseEntry.name,
+      code: courseEntry.code,
+      color: courseEntry.color,
+      user: {
+        connect: { id: user.id },
+      },
+    },
+    include: {
+      user: true,
+    },
+  });
 
   res.status(201).json(newCourse);
 };
 
-const changeCourse = (
-  req: Request<unknown, unknown, CourseFormEntry>,
-  res: Response<Course>,
+const changeCourse = async (
+  req: Request<IdParams, unknown, CourseFormEntry>,
+  res: Response,
   next: NextFunction,
 ) => {
   const changingCourse = req.body;
@@ -70,21 +77,23 @@ const changeCourse = (
     return;
   }
 
-  const courseIndex = courses.findIndex((c) => c.id === Number(id));
-
-  const changedCourse = {
-    ...courses[courseIndex],
-    name: changingCourse.name,
-    code: changingCourse.code,
-    color: changingCourse.color,
-  };
-
-  courses[courseIndex] = changedCourse;
+  const changedCourse = await prisma.course.update({
+    where: {
+      id: Number(id),
+    },
+    data: {
+      ...changingCourse,
+    },
+  });
 
   res.status(200).json(changedCourse);
 };
 
-const deleteCourse = (req: Request, res: Response, next: NextFunction) => {
+const deleteCourse = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   const user = res.locals.user;
   const id = req.params.id;
 
@@ -95,16 +104,11 @@ const deleteCourse = (req: Request, res: Response, next: NextFunction) => {
     return;
   }
 
-  const courseIndex = courses.findIndex((c) => c.id === Number(id));
-
-  if (courseIndex === -1) {
-    const error = new Error("Not Found");
-    error.name = "Not Found";
-    next(error);
-    return;
-  }
-
-  courses.splice(courseIndex, 1);
+  await prisma.course.delete({
+    where: {
+      id: Number(id),
+    },
+  });
 
   res.sendStatus(204);
 };

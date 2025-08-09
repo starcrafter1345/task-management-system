@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int      @id @default(autoincrement())
+  email           String   @unique(map: "users_email_unique") @db.VarChar(64)
+  name            String   @db.VarChar(64)
+  hashedPassword String   @db.Char(60) @map("hashed_password")
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+
+  courses Course[]
+
+  @@map("users")
+}
+
+model Course {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  name      String   @db.VarChar(64)
+  code      String   @db.VarChar(12)
+  color     String   @db.Char(7)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks Task[]
+
+  @@map("courses")
+}
+
+model Task {
+  id          Int       @id @default(autoincrement())
+  courseId    Int       @map("course_id")
+  title       String    @db.VarChar(256)
+  description String?   @db.Text
+  completed   Boolean   @default(false)
+  createdAt  DateTime  @default(now()) @db.Timestamp(6) @map("created_at")
+  updatedAt  DateTime  @updatedAt @default(now()) @db.Timestamp(6) @map("updated_at")
+  dueDate    DateTime? @db.Timestamp(6) @map("due_date")
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@map("tasks")
+}

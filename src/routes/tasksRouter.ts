@@ -1,28 +1,23 @@
-import { Router, Request, Response, NextFunction } from "express";
-import { TaskFormSchema } from "../types/Task";
+import { Router } from "express";
 import taskController from "../controllers/taskController";
+import { taskParser, taskToggleParser } from "../utils/parsers";
 
 const tasksRouter = Router();
-
-const taskParser = (req: Request, _res: Response, next: NextFunction) => {
-  try {
-    TaskFormSchema.parse(req.body);
-    next();
-  } catch (err: unknown) {
-    next(err);
-  }
-};
 
 tasksRouter
   .route("/tasks")
   .get(taskController.getAllTasks)
   .post(taskParser, taskController.createTask);
-//
+
 tasksRouter
   .route("/tasks/:id")
   .put(taskController.changeTask)
   .delete(taskController.deleteTask);
-//
-// tasksRouter.patch("/tasks/:id/toggle");
+
+tasksRouter.patch(
+  "/tasks/:id/toggle",
+  taskToggleParser,
+  taskController.toggleTaskComplete,
+);
 
 export default tasksRouter;

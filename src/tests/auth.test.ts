@@ -1,86 +1,118 @@
-import { describe, it, expect } from "vitest";
-import request from "supertest";
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
+import { agent } from "supertest";
 import { app } from "../index";
+import { prisma } from "../db";
+import { RegisterFormEntry } from "../types/User";
 
-const user = {
+const request = agent(app);
+
+const userEntry: RegisterFormEntry = {
   name: "starc",
   email: "starc@mail.com",
   password: "secret",
 };
 
+let refreshToken: string;
+let accessToken: string;
+
 describe("/auth", () => {
-  it("POST /register", async () => {
-    const response = await request(app).post("/api/auth/register").send(user);
-
-    expect(response.status).toBe(200);
-    expect(response.body.access_token).toBeDefined();
-    expect(response.headers["set-cookie"]).toBeDefined();
+  beforeAll(async () => {
+    await prisma.user.deleteMany();
+    await prisma.course.deleteMany();
+    await prisma.task.deleteMany();
   });
 
-  it("POST /login", async () => {
-    await request(app).post("/api/auth/register").send(user);
-    const { email, password } = user;
+  it("/register", async () => {
+    const register = await request.post("/api/auth/register").send(userEntry);
 
-    const response = await request(app)
-      .post("/api/auth/login")
-      .send({ email, password });
+    expect(register.status).toBe(201);
+    expect(register.headers["set-cookie"]).toBeDefined();
+    expect(register.body).toMatchObject({
+      access_token: expect.any(String) as string,
+      user: {
+        id: expect.any(Number) as number,
+        name: userEntry.name,
+        email: userEntry.email,
+        created_at: expect.any(String) as string,
+      },
+    });
 
-    expect(response.status).toBe(200);
-    expect(response.body.access_token).toBeDefined();
-    expect(response.headers["set-cookie"]).toBeDefined();
+    refreshToken = register.headers["set-cookie"];
+    accessToken = register.body.access_token as string;
   });
 
-  it("POST /login, wrong password", async () => {
-    await request(app).post("/api/auth/register").send(user);
+  it("/register, making same user should return uniqueness error", async () => {
+    const register = await request.post("/api/auth/register").send(userEntry);
 
-    const response = await request(app)
-      .post("/api/auth/login")
-      .send({ email: "starc@mail.com", password: "kdfmvkm" });
-
-    expect(response.status).toBe(401);
-    expect(response.body).toEqual({ error: "Unauthorized" });
-  });
-
-  it("POST /login, wrong email", async () => {
-    await request(app).post("/api/auth/register").send(user);
-
-    const response = await request(app)
-      .post("/api/auth/login")
-      .send({ email: "strc@mail.com", password: "secret" });
-
-    expect(response.status).toBe(404);
-    expect(response.body).toEqual({
-      error: "Not Found",
-      message: "User not found",
+    expect(register.status).toBe(400);
+    expect(register.body).toEqual({
+      error: "Bad Request",
+      cause: "Email must be unique",
     });
   });
 
-  it("POST /logout", async () => {
-    const register = await request(app).post("/api/auth/register").send(user);
+  it("/login", async () => {
+    const login = await request
+      .post("/api/auth/login")
+      .send({ email: userEntry.email, password: userEntry.password });
 
-    const token = register.body.refresh_token;
-    const logout = await request(app)
+    expect(login.status).toBe(200);
+    expect(login.headers["set-cookie"]).toBeDefined();
+    expect(login.body).toMatchObject({
+      access_token: expect.any(String) as string,
+      user: {
+        id: expect.any(Number) as number,
+        name: userEntry.name,
+        email: userEntry.email,
+        created_at: expect.any(String) as string,
+      },
+    });
+  });
+
+  it("/login, wrong email", async () => {
+    const login = await request.post("/api/auth/login").send({
+      email: "wrongemail@mail.com",
+      password: "wrongpassword",
+    });
+
+    expect(login.status).toBe(404);
+    expect(login.body).toEqual({
+      error: "Not Found",
+    });
+  });
+
+  it("/login, wrong password", async () => {
+    const login = await request.post("/api/auth/login").send({
+      email: userEntry.email,
+      password: "wrongpassword",
+    });
+
+    expect(login.status).toBe(401);
+    expect(login.body).toEqual({
+      error: "Unauthorized",
+    });
+  });
+
+  it("/logout", async () => {
+    const logout = await request
       .post("/api/auth/logout")
-      .set("Cookie", `refresh_token=${token}`);
+      .set("Cookie", refreshToken);
 
     expect(logout.status).toBe(200);
     expect(logout.body).toEqual({ message: "Logged Out" });
   });
 
-  it("GET /me", async () => {
-    const register = await request(app).post("/api/auth/register").send(user);
-
-    const token = register.body.access_token;
-    const me = await request(app)
+  it("/me", async () => {
+    const me = await request
       .get("/api/auth/me")
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${accessToken}`);
 
     expect(me.status).toBe(200);
-    expect(me.body).toEqual({
-      id: 6,
-      name: "starc",
-      email: "starc@mail.com",
-      createdAt: expect.any(String),
+    expect(me.body).toMatchObject({
+      id: expect.any(Number) as number,
+      name: userEntry.name,
+      email: userEntry.email,
+      created_at: expect.any(String) as string,
     });
   });
 });
