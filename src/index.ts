@@ -19,7 +19,7 @@ app.use("/api/auth", authRouter);
 
 app.use(authMiddleware);
 
-// app.use("/api", dashboardRouter);
+app.use("/api", dashboardRouter);
 app.use("/api", coursesRouter);
 app.use("/api", tasksRouter);
 

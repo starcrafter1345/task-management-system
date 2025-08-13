@@ -38,7 +38,6 @@ const getAllTasks = async (
   const userTasksWithStatus = userTasks.map((t) => ({
     ...t,
     isOverdue: t.dueDate ? new Date() > new Date(t.dueDate) : false,
-    status: getTaskStatus(t.dueDate, t.completed),
   }));
 
   res.status(200).json(userTasksWithStatus);
@@ -75,6 +74,9 @@ const createTask = async (
           code: true,
         },
       },
+    },
+    omit: {
+      status: true,
     },
   });
 
